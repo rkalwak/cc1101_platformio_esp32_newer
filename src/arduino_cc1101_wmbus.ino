@@ -64,19 +64,12 @@ namespace Supla
             Serial.print(readValue);
             Serial.println("m3");
             channel.setNewValue((int)(readValue*1000000));
+            std::string meterId= myDecoder.extractMeterId(frame);
+            Serial.print("Meter id: ");
+            Serial.println(meterId.c_str());
+           
           }
         }
-
-        /*
-        if (((lastReadTime + 10000 )< millis()))
-        {
-          lastReadTime = millis();
-          //Serial.println("Sending value.");
-          //Serial.printf("Sending value: %s m3.\n", readValue);
-          counter+=10;
-          channel.setNewValue(readValue);
-        }
-        */
       }
 
     protected:

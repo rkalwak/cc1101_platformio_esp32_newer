@@ -287,3 +287,12 @@ float apator162Decoder::extractValue(std::vector<unsigned char> frame)
 
   return get_total_water_m3(frame);
 }
+
+std::string apator162Decoder::extractMeterId(std::vector<unsigned char> frame)
+{
+  std::string decrypted_telegram = format_hex_pretty(frame);
+   decrypted_telegram.erase(std::remove(decrypted_telegram.begin(), decrypted_telegram.end(), '.'),
+                           decrypted_telegram.end());
+  std::string meterId= decrypted_telegram.substr(8,8);
+  return meterId;
+}
