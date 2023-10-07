@@ -1,83 +1,16 @@
 #include "Arduino.h"
 #include "crc.hpp"
 #include "mbus_packet.hpp"
-#include "wmbus_utils.hpp"
-#include "utils.hpp"
 #include "aes.hpp"
 #include "3outof6.hpp"
 #include "mbus_defs.hpp"
 #include "tmode_rf_settings.hpp"
 #include "rf_mbus.hpp"
-#include "apator162decoder.h"
+#include "WaterMeter.h"
 #include <SuplaDevice.h>
-#include <supla/channel_element.h>
-
+#include <Drivers/drivers.h>
 #include <supla/network/esp_wifi.h>
-Supla::ESPWifi wifi("Dom44A", "najciemniejpodlatarnia1234");
-namespace Supla
-{
-  namespace Sensor
-  { 
-    class WaterMeter : public ChannelElement
-    {
-    private:
-      float readValue = 0.0;
-      int packetLength = 192;
-      rf_mbus receiver;
-      apator162Decoder myDecoder;
-
-    public:
-      WaterMeter(uint8_t mosi = 23, uint8_t miso = 19, uint8_t clk = 18, uint8_t cs = 5, uint8_t gdo0 = 4, uint8_t gdo2 = 2) : lastReadTime(0)
-      {
-        bool isInitialized = receiver.init(mosi, miso, clk, cs, gdo0, gdo2);
-        if (isInitialized)
-        {
-          Serial.println("Receiver started.");
-        }
-        channel.setType(SUPLA_CHANNELTYPE_IMPULSE_COUNTER);
-        channel.setDefault(SUPLA_CHANNELFNC_IC_WATER_METER);
-      };
-
-      void iterateAlways()
-      {
-        if (receiver.task())
-        {
-          Serial.println("Found.");
-          dumpHex(receiver.MBpacket, packetLength);
-          /*
-          Serial.println("Decrypting.");
-          decoded_data data = decrypt(receiver.MBpacket, packetLength);
-          Serial.println("Decrypted. Rawdata:");
-          Serial.println(data.rawData);
-          Serial.print(data.usageNumber);
-          Serial.println("m3");
-          */
-          Serial.println("........................................");
-          WMbusFrame mbus_data = receiver.get_frame();
-          std::vector<unsigned char> frame = mbus_data.frame;
-          std::string telegram = format_hex_pretty(frame);
-          telegram.erase(std::remove(telegram.begin(), telegram.end(), '.'), telegram.end());
-
-          if (myDecoder.decrypt_telegram(frame))
-          {
-            readValue = myDecoder.extractValue(frame);
-            Serial.print(readValue);
-            Serial.println("m3");
-            channel.setNewValue((int)(readValue*1000000));
-            std::string meterId= myDecoder.extractMeterId(frame);
-            Serial.print("Meter id: ");
-            Serial.println(meterId.c_str());
-           
-          }
-        }
-      }
-
-    protected:
-      uint64_t lastReadTime;
-    };
-
-  };
-};
+Supla::ESPWifi wifi(wifiSSIDString, wifiPasswordString);
 
 void setup()
 {
@@ -89,11 +22,39 @@ void setup()
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {0x69, 0x06, 0x6D, 0x40, 0x48, 0x57, 0x5D, 0xFC, 0x79, 0xD7, 0x2C, 0xB2, 0x19, 0x75, 0x33, 0x28};
   // put your setup code here, to run once:
 
-  SuplaDevice.begin(GUID,                  // Global Unique Identifier
-                    serverVariable,     // SUPLA server address
-                    emailVariable, // Email address used to login to Supla Cloud
-                    AUTHKEY);              // Authorization key
-  new Supla::Sensor::WaterMeter();
+  SuplaDevice.begin(GUID,           // Global Unique Identifier
+                    serverVariable, // SUPLA server address
+                    emailVariable,  // Email address used to login to Supla Cloud
+                    AUTHKEY);       // Authorization key
+  std::vector<unsigned char> key{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  auto meter = new Supla::Sensor::WaterMeter(key, "apator162", 23, 19, 18, 5, 4, 2);
+
+  meter->add_driver(new Amiplus());
+  meter->add_driver(new Apator08());
+  meter->add_driver(new Apator162());
+  meter->add_driver(new ApatorEITN());
+  meter->add_driver(new Bmeters());
+  meter->add_driver(new C5isf());
+  meter->add_driver(new Compact5());
+  meter->add_driver(new Dme07());
+  meter->add_driver(new Elf());
+  meter->add_driver(new Evo868());
+  meter->add_driver(new FhkvdataIII());
+  meter->add_driver(new Hydrocalm3());
+  meter->add_driver(new Hydrus());
+  meter->add_driver(new Iperl());
+  meter->add_driver(new Itron());
+  meter->add_driver(new Izar());
+  meter->add_driver(new Mkradio3());
+  meter->add_driver(new Mkradio4());
+  meter->add_driver(new Qheat());
+  meter->add_driver(new Qwater());
+  meter->add_driver(new Sharky774());
+  meter->add_driver(new TopasESKR());
+  meter->add_driver(new Ultrimis());
+  meter->add_driver(new Unismart());
+  meter->add_driver(new Vario451());
+
 }
 
 void loop()
