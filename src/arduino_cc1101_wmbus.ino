@@ -27,7 +27,8 @@ void setup()
                     emailVariable,  // Email address used to login to Supla Cloud
                     AUTHKEY);       // Authorization key
   std::vector<unsigned char> key{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-  auto meter = new Supla::Sensor::WaterMeter(key, "apator162", 23, 19, 18, 5, 4, 2);
+  auto meter = new Supla::Sensor::WaterMeter(23, 19, 18, 5, 4, 2);
+  meter->add_sensor(new SensorInfo("87987102", "apator162", "total_water_m3", key));
 
   meter->add_driver(new Amiplus());
   meter->add_driver(new Apator08());

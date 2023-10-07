@@ -3,7 +3,7 @@ namespace Supla
 {
   namespace Sensor
   {
-    WaterMeter::WaterMeter(std::vector<unsigned char> key, std::string type, uint8_t mosi, uint8_t miso, uint8_t clk, uint8_t cs, uint8_t gdo0, uint8_t gdo2) : lastReadTime(0)
+    WaterMeter::WaterMeter(uint8_t mosi, uint8_t miso, uint8_t clk, uint8_t cs, uint8_t gdo0, uint8_t gdo2) : lastReadTime(0)
     {
       bool isInitialized = receiver.init(mosi, miso, clk, cs, gdo0, gdo2);
       if (isInitialized)
@@ -12,13 +12,16 @@ namespace Supla
       }
       channel.setType(SUPLA_CHANNELTYPE_IMPULSE_COUNTER);
       channel.setDefault(SUPLA_CHANNELFNC_IC_WATER_METER);
-      _type = type;
-      _key = key;
     };
 
     void WaterMeter::add_driver(Driver *driver)
     {
       this->drivers_[driver->get_name()] = driver;
+    }
+
+    void WaterMeter::add_sensor(SensorInfo *sensor)
+    {
+      this->sensors_[sensor->get_meter_id()] = sensor;
     }
 
     bool WaterMeter::decrypt_telegram(std::vector<unsigned char> &telegram, std::vector<unsigned char> key)
@@ -113,20 +116,21 @@ namespace Supla
         uint32_t meter_id = ((uint32_t)frame[7] << 24) | ((uint32_t)frame[6] << 16) |
                             ((uint32_t)frame[5] << 8) | ((uint32_t)frame[4]);
         std::string meterIdString = telegram.substr(8, 8);
+        auto sensor = sensors_[meterIdString];
         // need to decrypt first
         bool isOk = true;
-        if (_key.size())
+        if (sensor->get_key().size())
         {
-          if (!decrypt_telegram(frame, _key))
+          if (!decrypt_telegram(frame, sensor->get_key()))
           {
             isOk = false;
           }
         }
         if (isOk)
         {
-          auto driver = this->drivers_[_type];
+          auto driver = this->drivers_[sensor->get_type()];
           auto mapValues = driver->get_values(frame);
-          auto readValue = mapValues["total_water_m3"];
+          auto readValue = mapValues[sensor->get_property_to_send()];
           Serial.print("Meter id as number: ");
           Serial.println(meter_id);
           Serial.print("Meter id as string: ");
@@ -134,6 +138,9 @@ namespace Supla
           Serial.print(readValue);
           Serial.println("m3");
           channel.setNewValue((int)(readValue * 1000000));
+        }
+        else{
+          Serial.println("Failed to decrypt telegram.");
         }
       }
     }
