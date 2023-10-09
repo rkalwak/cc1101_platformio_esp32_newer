@@ -3,15 +3,13 @@ namespace Supla
 {
   namespace Sensor
   {
-    WaterMeter::WaterMeter(uint8_t mosi, uint8_t miso, uint8_t clk, uint8_t cs, uint8_t gdo0, uint8_t gdo2) : lastReadTime(0)
+    WaterMeter::WaterMeter(uint8_t mosi, uint8_t miso, uint8_t clk, uint8_t cs, uint8_t gdo0, uint8_t gdo2) 
     {
       bool isInitialized = receiver.init(mosi, miso, clk, cs, gdo0, gdo2);
       if (isInitialized)
       {
         Serial.println("Receiver started.");
       }
-      channel.setType(SUPLA_CHANNELTYPE_IMPULSE_COUNTER);
-      channel.setDefault(SUPLA_CHANNELFNC_IC_WATER_METER);
     };
 
     void WaterMeter::add_driver(Driver *driver)
@@ -137,7 +135,9 @@ namespace Supla
           Serial.println(meterIdString.c_str());
           Serial.print(readValue);
           Serial.println("m3");
-          channel.setNewValue((int)(readValue * 1000000));
+          sensor->setNewValue((int)(readValue * 1000000));
+          sensor->iterateAlways();
+
         }
         else{
           Serial.println("Failed to decrypt telegram.");

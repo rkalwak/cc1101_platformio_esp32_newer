@@ -6,12 +6,13 @@
 #include "mbus_defs.hpp"
 #include "tmode_rf_settings.hpp"
 #include "rf_mbus.hpp"
+#include "SensorInfo.h"
 #include "WaterMeter.h"
 #include <SuplaDevice.h>
 #include <Drivers/drivers.h>
 #include <supla/network/esp_wifi.h>
 Supla::ESPWifi wifi(wifiSSIDString, wifiPasswordString);
-
+Supla::Sensor::WaterMeter *meter;
 void setup()
 {
   Serial.begin(115200);
@@ -27,8 +28,8 @@ void setup()
                     emailVariable,  // Email address used to login to Supla Cloud
                     AUTHKEY);       // Authorization key
   std::vector<unsigned char> key{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-  auto meter = new Supla::Sensor::WaterMeter(23, 19, 18, 5, 4, 2);
-  meter->add_sensor(new SensorInfo("87987102", "apator162", "total_water_m3", key));
+  meter = new Supla::Sensor::WaterMeter(23, 19, 18, 5, 4, 2);
+  meter->add_sensor(new Supla::Sensor::SensorInfo("87987102", "apator162", "total_water_m3", key));
 
   meter->add_driver(new Amiplus());
   meter->add_driver(new Apator08());
@@ -61,4 +62,5 @@ void setup()
 void loop()
 {
   SuplaDevice.iterate();
+  meter->iterateAlways();
 }
