@@ -1,9 +1,10 @@
 #include "WaterMeter.h"
+#include <string>
 namespace Supla
 {
   namespace Sensor
   {
-    WaterMeter::WaterMeter(uint8_t mosi, uint8_t miso, uint8_t clk, uint8_t cs, uint8_t gdo0, uint8_t gdo2) 
+    WaterMeter::WaterMeter(uint8_t mosi, uint8_t miso, uint8_t clk, uint8_t cs, uint8_t gdo0, uint8_t gdo2)
     {
       bool isInitialized = receiver.init(mosi, miso, clk, cs, gdo0, gdo2);
       if (isInitialized)
@@ -12,12 +13,14 @@ namespace Supla
       }
     };
 
+    WaterMeter::WaterMeter(int a){};
+
     void WaterMeter::add_driver(Driver *driver)
     {
       this->drivers_[driver->get_name()] = driver;
     }
 
-    void WaterMeter::add_sensor(SensorInfo *sensor)
+    void WaterMeter::add_sensor(SensorBase *sensor)
     {
       this->sensors_[sensor->get_meter_id()] = sensor;
     }
@@ -98,6 +101,52 @@ namespace Supla
       return ret_val;
     }
 
+    float WaterMeter::parse_frame(std::vector<unsigned char> &frame)
+    {
+      Serial.println("Formatting as string.");
+
+      std::string telegram = format_hex_pretty(frame);
+
+      Serial.println("Removing helping characters.");
+
+      telegram.erase(std::remove(telegram.begin(), telegram.end(), '.'), telegram.end());
+
+      Serial.println("Getting meter id as number.");
+
+      uint32_t meter_id = ((uint32_t)frame[7] << 24) | ((uint32_t)frame[6] << 16) |
+                          ((uint32_t)frame[5] << 8) | ((uint32_t)frame[4]);
+      Serial.println("Getting meter id as string.");
+      std::string meterIdString = telegram.substr(8, 8);
+      auto sensor = sensors_[meterIdString];
+      bool isOk = true;
+      float readValue = 0.0;
+      if (sensor->get_key().size())
+      {
+        if (!decrypt_telegram(frame, sensor->get_key()))
+        {
+          isOk = false;
+        }
+      }
+      if (isOk)
+      {
+        auto driver = this->drivers_[sensor->get_type()];
+        auto mapValues = driver->get_values(frame);
+        readValue = mapValues[sensor->get_property_to_send()];
+        Serial.print("Meter id as number: ");
+        Serial.println(meter_id);
+        Serial.print("Meter id as string: ");
+        Serial.println(meterIdString.c_str());
+        Serial.print(readValue);
+        Serial.println("m3");
+        sensor->setNewValue((int)(readValue * 1000000));
+        sensor->iterateAlways();
+      }
+      else
+      {
+        Serial.println("Failed to decrypt telegram.");
+      }
+      return readValue;
+    }
 
     void WaterMeter::iterateAlways()
     {
@@ -106,45 +155,16 @@ namespace Supla
         Serial.println("Found.");
         dumpHex(receiver.MBpacket, packetLength);
 
-        Serial.println("........................................");
+        Serial.println("Getting frame.");
+
         WMbusFrame mbus_data = receiver.get_frame();
         std::vector<unsigned char> frame = mbus_data.frame;
-        std::string telegram = format_hex_pretty(frame);
-        telegram.erase(std::remove(telegram.begin(), telegram.end(), '.'), telegram.end());
-        uint32_t meter_id = ((uint32_t)frame[7] << 24) | ((uint32_t)frame[6] << 16) |
-                            ((uint32_t)frame[5] << 8) | ((uint32_t)frame[4]);
-        std::string meterIdString = telegram.substr(8, 8);
-        auto sensor = sensors_[meterIdString];
-        // need to decrypt first
-        bool isOk = true;
-        if (sensor->get_key().size())
-        {
-          if (!decrypt_telegram(frame, sensor->get_key()))
-          {
-            isOk = false;
-          }
-        }
-        if (isOk)
-        {
-          auto driver = this->drivers_[sensor->get_type()];
-          auto mapValues = driver->get_values(frame);
-          auto readValue = mapValues[sensor->get_property_to_send()];
-          Serial.print("Meter id as number: ");
-          Serial.println(meter_id);
-          Serial.print("Meter id as string: ");
-          Serial.println(meterIdString.c_str());
-          Serial.print(readValue);
-          Serial.println("m3");
-          sensor->setNewValue((int)(readValue * 1000000));
-          sensor->iterateAlways();
 
-        }
-        else{
-          Serial.println("Failed to decrypt telegram.");
-        }
+        Serial.println("........................................");
+        Serial.println("Parsing frame.");
+        parse_frame(frame);
       }
     }
-
 
   };
 };

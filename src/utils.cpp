@@ -170,10 +170,10 @@ bool decrypt_TPL_AES_CBC_IV(std::vector<unsigned char> &frame,
   memcpy(buffer_data, safeButUnsafeVectorPtr(buffer), num_bytes_to_decrypt);
   unsigned char decrypted_data[num_bytes_to_decrypt];
   memcpy(decrypted_data, buffer_data,num_bytes_to_decrypt);
-  Serial.println("IV:");
-  dumpHex(iv, 16);
-  Serial.println("Payload:");
-  dumpHex(decrypted_data, num_bytes_to_decrypt);
+  //Serial.println("IV:");
+  //dumpHex(iv, 16);
+  //Serial.println("Payload:");
+  //dumpHex(decrypted_data, num_bytes_to_decrypt);
   struct AES_ctx ctx;
   AES_init_ctx_iv(&ctx, &key[0], iv);
 
