@@ -1,7 +1,6 @@
 #ifndef _WaterMeter_h
 #define _WaterMeter_h
 #include "Arduino.h"
-#endif
 #include "rf_mbus.hpp"
 #include "Drivers/driver.h"
 
