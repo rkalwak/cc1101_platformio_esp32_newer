@@ -18,6 +18,8 @@ void setup()
   Serial.begin(115200);
   delay(5000);
   Serial.println("----------------Example sensors decoding-------------");
+
+  Serial.println("1. Apator 16-2 long frame");
   auto meterT = new Supla::Sensor::WaterMeter(0);
   meterT->add_driver(new Apator162());
   // 00000000000000000000000000000000
@@ -32,6 +34,7 @@ void setup()
   Serial.print(readValue);
   Serial.println("m3");
 
+  Serial.println("2. Iperl");
   auto meterI = new Supla::Sensor::WaterMeter(0);
   meterI->add_driver(new Iperl());
   // E6C88800DEB868C0D6A84880CE982840
@@ -47,6 +50,7 @@ void setup()
   Serial.print(readValue);
   Serial.println("m3");
 
+  Serial.println("3. Apator 16-2 short frame");
   auto meterA = new Supla::Sensor::WaterMeter(0);
   meterA->add_driver(new Apator162());
   // 3E44010614217103050787F47A86003085437BF01862DB9B8F85A4B456FB513D34A9747BAAA9AA99 EAF2D34CAAD1BB25FEFB1906E8CC2972508F811D619F1518A3C8E36F3F53236E8A00000000000000 00000000000000000000000000000000000000000000000000000000000000000000000000000000 00000000000000000000000000000000000000000000000000000000000000000000000000000000 0000000000000000000000000000000000000000000000000000000000000000
