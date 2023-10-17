@@ -117,35 +117,68 @@ namespace Supla
                           ((uint32_t)frame[5] << 8) | ((uint32_t)frame[4]);
       Serial.println("Getting meter id as string.");
       std::string meterIdString = telegram.substr(8, 8);
-      auto sensor = sensors_[meterIdString];
-      bool isOk = true;
-      float readValue = 0.0;
-      if (sensor->get_key().size())
+      char s[9]= {0,0,0,0,0,0,0,0,0};
+      s[0]=meterIdString[6];
+      s[1]=meterIdString[7];
+      s[2]=meterIdString[4];
+      s[3]=meterIdString[5];
+      s[4]=meterIdString[2];
+      s[5]=meterIdString[3];
+      s[6]=meterIdString[0];
+      s[7]=meterIdString[1];
+      std::string meterIdRealString = s;
+
+      if(sensors_.count(meterIdRealString) > 0)
       {
-        if (!decrypt_telegram(frame, sensor->get_key()))
+        Serial.println("Getting sensor config.");
+        auto sensor = sensors_[meterIdRealString];
+        bool isOk = true;
+        float readValue = 0.0;
+        if (sensor->get_key().size())
         {
-          isOk = false;
+          Serial.println("Key provided, decrypting frame.");
+          if (!decrypt_telegram(frame, sensor->get_key()))
+          {
+            isOk = false;
+          }
         }
-      }
-      if (isOk)
-      {
-        auto driver = this->drivers_[sensor->get_type()];
-        auto mapValues = driver->get_values(frame);
-        readValue = mapValues[sensor->get_property_to_send()];
-        Serial.print("Meter id as number: ");
-        Serial.println(meter_id);
-        Serial.print("Meter id as string: ");
-        Serial.println(meterIdString.c_str());
-        Serial.print(readValue);
-        Serial.println("m3");
-        sensor->setNewValue((int)(readValue * 1000000));
-        sensor->iterateAlways();
+        if (isOk)
+        {
+          if(this->drivers_.count(sensor->get_type()))
+          {
+            Serial.println("Getting driver.");
+            auto driver = this->drivers_[sensor->get_type()];
+            auto mapValues = driver->get_values(frame);
+            readValue = mapValues[sensor->get_property_to_send()];
+            Serial.print("Meter id as number: ");
+            Serial.println(meterIdRealString.c_str());
+            Serial.print("Meter id as string: ");
+            Serial.println(meterIdString.c_str());
+            Serial.print(readValue);
+            Serial.println("m3");
+            sensor->setNewValue((int)(readValue * 1000000));
+            sensor->iterateAlways();
+          }
+          else
+          {
+            Serial.print("Driver for sensor: ");
+            Serial.print(sensor->get_type().c_str());
+            Serial.println(" does not exist.");
+          }
+        }
+        else
+        {
+          Serial.println("Failed to decrypt telegram.");
+        }
+        return readValue;
       }
       else
       {
-        Serial.println("Failed to decrypt telegram.");
+        Serial.print("Config for meter: ");
+        Serial.print(meterIdString.c_str());
+        Serial.println(" does not exist.");
       }
-      return readValue;
+      return 0.0;
     }
 
     void WaterMeter::iterateAlways()
