@@ -94,7 +94,7 @@ void setup()
                     AUTHKEY);       // Authorization key
   std::vector<unsigned char> key{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   meter = new Supla::Sensor::WaterMeter(23, 19, 18, 5, 4, 2);
-  meter->add_sensor(new Supla::Sensor::SensorInfo("87987102", "apator162", "total_water_m3", key));
+  meter->add_sensor(new Supla::Sensor::SensorInfo("02719887", "apator162", "total_water_m3", key));
 
   meter->add_driver(new Amiplus());
   meter->add_driver(new Apator08());
